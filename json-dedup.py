@@ -155,6 +155,30 @@ def inline(d, root):
 
     return d
 
+def inline_expr(d, expr, inlined = {}):
+    if isinstance(expr, (str)):
+        if len(expr) <= 2 and expr in d:
+            inlined, e = inline_expr(d, d[expr], inlined)
+            return inlined, e
+        if len(expr) <= 4 and expr[:2] == "&%":
+            return inlined, expr[2:]
+        else:
+            return inlined, expr
+    elif isinstance(expr, list):
+        new_list = []
+        for item in expr:
+            inlined, e = inline_expr(d, item, inlined)
+            new_list.append(e)
+        return inlined, new_list
+    elif isinstance(expr, dict):
+        new_dict = {}
+        for key, value in expr.items():
+            inlined, e = inline_expr(d, value, inlined)
+            new_dict[key] = e
+        return inlined, new_dict
+    else:
+        return inlined, expr
+
 def total(d, e):
     (d, root) = dedup({}, e)
     d = protect_strings(d)
@@ -162,38 +186,9 @@ def total(d, e):
     d = inline(d, root)
     return d, root
 
-def inlineds(d, root, inlined = {}):
-    if root in inlined:
-        return inlined
-    else:
-        e = d[root]
-        if not isinstance(e, (list, dict)):
-            inlined[root] = e
-            return inlined
-        elif isinstance(e, list):
-            new_list = []
-            for item in e:
-                if isinstance(item, (str)) and len(item) <= 2:
-                    inlined = inlineds(d, item, inlined)
-                    new_list.append(inlined[item])
-                else:
-                    new_list.append(item)
-            inlined[root] = new_list
-            return inlined
-        elif isinstance(e, dict):
-            new_dict = {}
-            for key, value in e.items():
-                if isinstance(value, (str)) and len(value) <= 2:
-                    inlined = inlineds(d, value, inlined)
-                    new_dict[key] = inlined[value]
-                else:
-                    new_dict[key] = value
-            inlined[root] = new_dict
-            return inlined
-
 def inverse(d, root):
-    inlined = inlineds(d, root)
-    return inlined[root]
+    inlined, e = inline_expr(d, root)
+    return e
 
 def main():
     parser = argparse.ArgumentParser(description="Compress JSON files.")
@@ -207,25 +202,29 @@ def main():
     # print(json.dumps(d))
     # print(inverse(d, root))
 
-    e = {
-        "nm": "ex",
-        "vals": [1, 1, {"foo": "bar"}],
-        "anthr": {"foo": "bar"}
-    }
+    # e = {
+    #     "nm": "ex",
+    #     "vals": [1, 1, {"foo": "bar"}],
+    #     "anthr": {"foo": "bar"}
+    # }
 
+
+    e = json_content
     (d, root) = dedup({}, e)
     d = protect_strings(d)
     (d, root) = optimize(d, root)
     d = inline(d, root)
-    i = inverse(d, root)
+    # i = inverse(d, root)
 
-    res = {
-            "e": e,
-            "d": d,
-            "root": root,
-            "i" : i
-    }
-    print(json.dumps(res))
+    # res = {
+    #         "e": e,
+    #         "d": d,
+    #         "root": root,
+    #         "i" : i
+    # }
+    # print(json.dumps(res))
+    print(json.dumps(d))
+    # print(i == e)
 
     # histogram = compute_histogram(d)
     # print_histogram(histogram)
