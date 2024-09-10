@@ -120,7 +120,7 @@ def optimize(d, root):
 
     return d, hash_to_short[root]
 
-def inline(d, root):
+def inline_(d, root):
     # Create a reverse mapping from hash to expressions that refer to it
     reverse_mapping = {}
     for h, e in d.items():
@@ -155,39 +155,50 @@ def inline(d, root):
 
     return d
 
-def inline_expr(d, expr, inlined = {}):
-    if isinstance(expr, (str)):
-        if len(expr) <= 2 and expr in d:
-            inlined, e = inline_expr(d, d[expr], inlined)
-            return inlined, e
-        if len(expr) <= 4 and expr[:2] == "&%":
-            return inlined, expr[2:]
-        else:
-            return inlined, expr
-    elif isinstance(expr, list):
-        new_list = []
-        for item in expr:
-            inlined, e = inline_expr(d, item, inlined)
-            new_list.append(e)
-        return inlined, new_list
-    elif isinstance(expr, dict):
-        new_dict = {}
-        for key, value in expr.items():
-            inlined, e = inline_expr(d, value, inlined)
-            new_dict[key] = e
-        return inlined, new_dict
+def inline(d, e, inline_all = True):
+    if inline_all:
+        e_, inlined = inline_aux(d, e, {}, set({k for k, v in d.items()}))
+        return {}, e_
     else:
-        return inlined, expr
+        f = compute_frequencies(d)
+        s = set({k for k, v in f.items() if v == 1})
+        e_, inlined = inline_aux(d, e, {}, s)
+        print(json.dumps(inlined))
+        return {k : inlined[k] for k, v in d.items() if k not in s}, e_
+
+def inline_aux(d, e, inlined, s):
+    if isinstance(e, (str)):
+        if len(e) <= 2 and e in d:
+            e_, inlined = inline_aux(d, d[e], inlined, s)
+            return e_, inlined
+        if len(e) <= 4 and e[:2] == "&%":
+            return e[2:], inlined
+        else:
+            return e, inlined
+    elif isinstance(e, list):
+        new_list = []
+        for item in e:
+            inlined, e_ = inline_aux(d, item, inlined, s)
+            new_list.append(e_)
+        return new_list, inlined
+    elif isinstance(e, dict):
+        new_dict = {}
+        for key, value in e.items():
+            inlined, e_ = inline_aux(d, value, inlined, s)
+            new_dict[key] = e_
+        return new_dict, inlined
+    else:
+        return e, inlined
 
 def total(d, e):
     (d, root) = dedup({}, e)
     d = protect_strings(d)
     (d, root) = optimize(d, root)
-    d = inline(d, root)
+    d, _ = inline(d, root, False)
     return d, root
 
 def inverse(d, root):
-    inlined, e = inline_expr(d, root)
+    _, e = inline(d, root)
     return e
 
 def main():
@@ -202,18 +213,18 @@ def main():
     # print(json.dumps(d))
     # print(inverse(d, root))
 
-    # e = {
-    #     "nm": "ex",
-    #     "vals": [1, 1, {"foo": "bar"}],
-    #     "anthr": {"foo": "bar"}
-    # }
+    e = {
+        "nm": "ex",
+        "vals": [1, 1, {"foo": "bar"}],
+        "nthr": {"foo": "bar"}
+    }
 
+    # e = json_content
 
-    e = json_content
     (d, root) = dedup({}, e)
     d = protect_strings(d)
     (d, root) = optimize(d, root)
-    d = inline(d, root)
+    d, _ = inline(d, root, False)
     # i = inverse(d, root)
 
     # res = {
@@ -224,6 +235,7 @@ def main():
     # }
     # print(json.dumps(res))
     print(json.dumps(d))
+    # print(json.dumps(i))
     # print(i == e)
 
     # histogram = compute_histogram(d)
