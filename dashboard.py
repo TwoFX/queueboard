@@ -282,10 +282,20 @@ def print_html5_footer() -> None:
     print("""
     <script>
     $(document).ready( function () {
+      let prn = DataTable.type('prNumber', {
+        detect: function (data) { return typeof data === 'string' && data.startsWith("#"); },
+        order: {
+          pre: function (data) {
+            return Number(data.slice(1));
+          }
+        },
+      className: 'prNumber'
+      });
       $('table').DataTable({
         pageLength: 10,
         "searching": true,
         columnDefs: [
+          { type: 'prNumber', targets: 0},
           { type: 'num', targets: [5, 6] },
           { type: 'string', targets: [1, 2] },
         ]
