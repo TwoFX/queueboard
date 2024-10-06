@@ -276,12 +276,19 @@ def print_html5_header() -> None:
         Feedback on this dashboard is welcome, for instance <a href="https://github.com/jcommelin/queueboard">directly on the github repository</a>.</small>""")
 
 def print_html5_footer() -> None:
+    # The 'type' definitions in the columnDefs are merely optimisations (and not essential):
+    # they allow omitting the data-table's auto-detection,
+    # thus speeding up the page loading.
     print("""
     <script>
     $(document).ready( function () {
       $('table').DataTable({
         pageLength: 10,
         "searching": true,
+        columnDefs: [
+          { type: 'num', targets: [5, 6] },
+          { type: 'string', targets: [1, 2] },
+        ]
       });
     });
     </script>
