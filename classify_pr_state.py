@@ -110,7 +110,7 @@ def label_to_prstatus(label: LabelKind) -> PRStatus:
 def determine_PR_status(date: datetime, state: PRState) -> PRStatus:
     '''Determine a PR's status from its state
     'date' is necessary as the interpretation of the awaiting-review label changes over time'''
-    if state.draft or state.ci == CIStatus.Fail:
+    if state.draft:
         return PRStatus.NotReady
     # Ignore all "other" labels, which are not relevant for this anyway.
     labels = [l for l in state.labels if l != LabelKind.Other]
@@ -165,6 +165,10 @@ def determine_PR_status(date: datetime, state: PRState) -> PRStatus:
             LabelKind.Delegated: 4,
         }
         sorted_labels = sorted(labels, key=lambda k: key[k], reverse=True)
+        # We consider failing CI akin to a 'WIP' label: it will influence the result,
+        # but is not so crucial as to override everything else.
+        if state.ci != CIStatus.Pass and LabelKind.WIP not in sorted_labels:
+            sorted_labels.append(LabelKind.WIP)
         return label_to_prstatus(sorted_labels[0])
 
 
