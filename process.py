@@ -90,6 +90,12 @@ def get_aggregate_data(pr_data: dict, only_basic_info: bool) -> dict:
         aggregate_data["number_review_comments"] = number_review_comments
         # reviewDecision: null, or "APPROVED", or "CHANGES_REQUESTED"
         aggregate_data["reviewDecision"] = inner["reviewDecision"]
+        # github usernames of everyone who left an "approving" review on this PR.
+        approvals = []
+        for r in inner["review"]["nodes"]:
+            if r["state"] == "APPROVED":
+                approvals.append(r["author"]["login"])
+        aggregate_data["review_approvals"] = approvals
     return aggregate_data
 
 
