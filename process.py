@@ -59,8 +59,7 @@ def get_aggregate_data(pr_data: dict, only_basic_info: bool) -> dict:
     # Names of all labels applied to this PR: missing the background colour!
     labels = [lab["name"] for lab in inner["labels"]["nodes"]]
     assignees = [ass["login"] for ass in inner["assignees"]["nodes"]]
-    # reviewDecision: null, or "APPROVED", or "CHANGES_REQUESTED"
-    reviewDecision = inner[reviewDecision]
+
     # Get information about the latest CI run. We just look at the "summary job".
     CI_status = determine_ci_status(number, inner["statusCheckRollup"]["contexts"]["nodes"])
     # NB. When adding future fields, pay attention to whether the 'basic' info files
@@ -80,7 +79,6 @@ def get_aggregate_data(pr_data: dict, only_basic_info: bool) -> dict:
         "additions": additions,
         "deletions": deletions,
         "assignees": assignees,
-        "reviewDecision": reviewDecision,
     }
     if not only_basic_info:
         number_comments = len(inner["comments"]["nodes"])
@@ -90,6 +88,8 @@ def get_aggregate_data(pr_data: dict, only_basic_info: bool) -> dict:
             number_review_comments += len(t["comments"]["nodes"])
         aggregate_data["number_comments"] = number_comments
         aggregate_data["number_review_comments"] = number_review_comments
+        # reviewDecision: null, or "APPROVED", or "CHANGES_REQUESTED"
+        aggregate_data["reviewDecision"] = inner["reviewDecision"]
     return aggregate_data
 
 
